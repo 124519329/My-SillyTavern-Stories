@@ -32,7 +32,6 @@
     box-sizing: border-box;
 }
 
-/* ... (此处省略了您已有的、工作正常的 library 样式) ... */
 #story_library_close_btn { position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 28px; color: var(--secondary-text, #b0b0b0); cursor: pointer; line-height: 1; }
 #story_library_close_btn:hover { color: var(--primary-text, #e0e0e0); }
 .library-header { margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 1px solid var(--border-color, #444); flex-wrap: wrap; }
@@ -80,33 +79,134 @@
 #upload_status { margin-top: 15px; font-size: 0.9em; }
 
 
+/* --- 剧本列表项的新样式 --- */
+.library-story-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.story-item-actions {
+    display: none; /* 默认隐藏 */
+    flex-shrink: 0;
+}
+.library-story-item:hover .story-item-actions,
+.library-story-item.active .story-item-actions {
+    display: block; /* 悬停或激活时显示 */
+}
+.story-item-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px 5px;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+.story-item-btn:hover {
+    opacity: 1;
+}
+
+
 /* ========================================================== */
 /* ============== 【移动端适配 - 响应式设计】 =============== */
 /* ========================================================== */
 
 @media (max-width: 768px) {
-    #story_library_modal_overlay, #story_upload_modal_overlay {
+    /* --- 核心修改：让整个弹窗内容区可以滚动 --- */
+    #story_library_modal_content {
+        width: 95vw;
+        height: auto; /* 改为自动高度 */
+        max-height: 90vh; /* 设置最大高度 */
+        overflow-y: auto; /* 超出最大高度时，允许垂直滚动 */
+        padding: 15px 10px; /* 调整内边距，使其更紧凑 */
+        flex-direction: column; /* 保持垂直布局 */
+    }
+
+    #story_upload_modal_overlay {
         padding-top: 2.5vh; /* 手机上边距更小一些 */
     }
-    #story_library_modal_content { width: 95vw; height: 90vh; padding: 10px; }
-    .library-header { flex-direction: column; align-items: flex-start; }
-    #story_search_input { width: 100%; box-sizing: border-box; margin-top: 10px; }
-    #open_upload_modal_btn { margin-left: 0 !important; margin-top: 10px; width: 100%; }
-    .library-body, .library-main { flex-direction: column; }
-    .library-sidebar {
-        width: 100%; height: auto; flex-direction: row;
-        overflow-x: auto; padding-bottom: 10px;
-        border-bottom: 1px solid var(--border-color, #444);
+
+    .library-header {
+        flex-direction: column;
+        align-items: flex-start;
+        flex-shrink: 0; /* 防止头部被压缩 */
     }
-    .library-sidebar h3 { display: none; }
-    .library-tag-btn { flex-shrink: 0; width: auto; margin-right: 8px; }
-    .library-main { height: 100%; }
-    .story-list-panel, .story-content-panel { width: 100%; box-sizing: border-box; }
-    .story-list-panel { height: 40%; flex-shrink: 0; }
-    .story-content-panel { height: 60%; }
-    #library_send_btn { width: 100%; }
+    #story_search_input {
+        width: 100%;
+        box-sizing: border-box;
+        margin-top: 10px;
+    }
+    #open_upload_modal_btn {
+        margin-left: 0 !important;
+        margin-top: 10px;
+        width: 100%;
+    }
+
+    /* --- 核心修改：移除内部滚动，让其自然撑开高度 --- */
+    .library-body {
+        flex-direction: column;
+        overflow: visible; /* 移除溢出隐藏 */
+        gap: 10px; /* 减小间距 */
+    }
+    .library-main {
+        flex-direction: column;
+        overflow: visible; /* 移除溢出隐藏 */
+        height: auto; /* 高度自适应 */
+    }
+
+    /* --- 核心修改：标签栏最多显示两行，并优化滚动 --- */
+    .library-sidebar {
+        width: 100%;
+        height: auto; /* 高度自适应 */
+        max-height: 75px; /* 限制最大高度，大致为两行标签的高度 */
+        flex-direction: row;
+        flex-wrap: wrap; /* 允许标签换行 */
+        overflow-y: auto; /* 如果标签超过两行，允许垂直滚动 */
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border-color, #444);
+        flex-shrink: 0; /* 防止被压缩 */
+    }
+    .library-sidebar h3 {
+        display: none;
+    }
+    .library-tag-btn {
+        flex-shrink: 0;
+        width: auto;
+        margin-right: 8px;
+        margin-bottom: 8px; /* 增加底部边距，用于换行 */
+    }
+    
+    /* --- 核心修改：剧本列表和内容区高度自适应 --- */
+    .story-list-panel, .story-content-panel {
+        width: 100%;
+        box-sizing: border-box;
+        height: auto; /* 关键：移除固定百分比高度，改为自动 */
+        flex-shrink: 0; /* 防止被压缩 */
+    }
+
+    /* --- 新增：限制剧本列表的高度并添加滚动条 --- */
+    #library_story_list_container {
+        max-height: 180px; /* 预估值，大约是4个列表项的高度 */
+        overflow-y: auto;  /* 当内容超出时，显示垂直滚动条 */
+    }
+
+    #library_send_btn {
+        width: 100%;
+    }
+
+    /* --- 核心修改：修复编辑/删除按钮的显示逻辑 --- */
+    .library-story-item .story-item-actions {
+        display: none; /* 在移动端，默认强制隐藏所有按钮 */
+    }
+    .library-story-item.active .story-item-actions {
+        display: block; /* 仅在项目被选中(active)时显示按钮 */
+    }
     
     /* 【上传窗口移动端修正】 */
-    .form-actions { text-align: center; }
-    #submit_upload_btn { width: 100%; }
+    .form-actions {
+        text-align: center;
+    }
+    #submit_upload_btn {
+        width: 100%;
+    }
 }
