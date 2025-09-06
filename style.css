@@ -8,9 +8,7 @@
     background-color: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(4px);
     display: flex; justify-content: center;
-    /* 【核心修正】统一改为顶部对齐 */
     align-items: flex-start; 
-    /* 【核心修正】给顶部留出安全空间，防止被截断 */
     padding-top: 5vh;
     box-sizing: border-box;
 }
@@ -106,30 +104,34 @@
     opacity: 1;
 }
 
+/* --- 【桌面端】默认隐藏移动端的下拉选择框 --- */
+#library_tag_select_wrapper {
+    display: none;
+}
+
 
 /* ========================================================== */
 /* ============== 【移动端适配 - 响应式设计】 =============== */
 /* ========================================================== */
 
 @media (max-width: 768px) {
-    /* --- 核心修改：让整个弹窗内容区可以滚动 --- */
     #story_library_modal_content {
         width: 95vw;
-        height: auto; /* 改为自动高度 */
-        max-height: 90vh; /* 设置最大高度 */
-        overflow-y: auto; /* 超出最大高度时，允许垂直滚动 */
-        padding: 15px 10px; /* 调整内边距，使其更紧凑 */
-        flex-direction: column; /* 保持垂直布局 */
+        height: auto; 
+        max-height: 90vh; 
+        overflow-y: auto; 
+        padding: 15px 10px; 
+        flex-direction: column; 
     }
 
     #story_upload_modal_overlay {
-        padding-top: 2.5vh; /* 手机上边距更小一些 */
+        padding-top: 2.5vh;
     }
 
     .library-header {
         flex-direction: column;
         align-items: flex-start;
-        flex-shrink: 0; /* 防止头部被压缩 */
+        flex-shrink: 0; 
     }
     #story_search_input {
         width: 100%;
@@ -141,68 +143,77 @@
         margin-top: 10px;
         width: 100%;
     }
-
-    /* --- 核心修改：移除内部滚动，让其自然撑开高度 --- */
     .library-body {
         flex-direction: column;
-        overflow: visible; /* 移除溢出隐藏 */
-        gap: 10px; /* 减小间距 */
+        overflow: visible; 
+        gap: 10px; 
     }
     .library-main {
         flex-direction: column;
-        overflow: visible; /* 移除溢出隐藏 */
-        height: auto; /* 高度自适应 */
+        overflow: visible; 
+        height: auto; 
     }
 
-    /* --- 核心修改：标签栏最多显示两行，并优化滚动 --- */
+    /* --- 核心修改：标签栏区域适配 --- */
     .library-sidebar {
         width: 100%;
-        height: auto; /* 高度自适应 */
-        max-height: 75px; /* 限制最大高度，大致为两行标签的高度 */
-        flex-direction: row;
-        flex-wrap: wrap; /* 允许标签换行 */
-        overflow-y: auto; /* 如果标签超过两行，允许垂直滚动 */
-        padding-bottom: 10px;
+        height: auto;
+        flex-direction: row; /* 让内部元素水平排列 */
+        align-items: center; /* 垂直居中 */
         border-bottom: 1px solid var(--border-color, #444);
-        flex-shrink: 0; /* 防止被压缩 */
+        padding-bottom: 10px;
+        flex-shrink: 0;
+        overflow: visible; /* 移除滚动 */
     }
     .library-sidebar h3 {
         display: none;
     }
-    .library-tag-btn {
-        flex-shrink: 0;
-        width: auto;
-        margin-right: 8px;
-        margin-bottom: 8px; /* 增加底部边距，用于换行 */
+
+    /* 隐藏桌面端的按钮容器 */
+    #library_tag_container {
+        display: none;
     }
     
-    /* --- 核心修改：剧本列表和内容区高度自适应 --- */
+    /* 显示并美化移动端的下拉选择框 */
+    #library_tag_select_wrapper {
+        display: flex;
+        width: 100%;
+        align-items: center;
+    }
+    #library_tag_select_wrapper label {
+        margin-right: 10px;
+        white-space: nowrap; /* 防止 "分类:" 换行 */
+    }
+    #library_tag_select {
+        display: block; /* 确保它显示出来 */
+        width: 100%; /* 占满剩余宽度 */
+        padding: 8px;
+        border-radius: 5px;
+        background-color: var(--bg-color, #2a2a2e);
+        color: var(--primary-text, #e0e0e0);
+        border: 1px solid var(--border-color, #444);
+        box-sizing: border-box;
+    }
+
     .story-list-panel, .story-content-panel {
         width: 100%;
         box-sizing: border-box;
-        height: auto; /* 关键：移除固定百分比高度，改为自动 */
-        flex-shrink: 0; /* 防止被压缩 */
+        height: auto; 
+        flex-shrink: 0; 
     }
-
-    /* --- 新增：限制剧本列表的高度并添加滚动条 --- */
     #library_story_list_container {
-        max-height: 180px; /* 预估值，大约是4个列表项的高度 */
-        overflow-y: auto;  /* 当内容超出时，显示垂直滚动条 */
+        max-height: 180px; 
+        overflow-y: auto;  
     }
-
     #library_send_btn {
         width: 100%;
     }
-
-    /* --- 核心修改：修复编辑/删除按钮的显示逻辑 --- */
     .library-story-item .story-item-actions {
-        display: none; /* 在移动端，默认强制隐藏所有按钮 */
+        display: none; 
     }
     .library-story-item.active .story-item-actions {
-        display: block; /* 仅在项目被选中(active)时显示按钮 */
+        display: block; 
     }
-    
-    /* 【上传窗口移动端修正】 */
     .form-actions {
         text-align: center;
     }
