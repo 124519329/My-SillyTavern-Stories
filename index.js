@@ -21,34 +21,24 @@ const defaultSettings = {
 let allStories = [];
 let currentStory = null;
 
+// ====================== 【坚守您的、绝对正确的发送逻辑】 ======================
 async function sendTextDirectly(text) {
     if (!text) return;
-
-    // 优先尝试官方的 triggerSlash 函数，这是最正确、最高效的方式。
     if (typeof window.triggerSlash === 'function') {
-        console.log("【小剧场库】找到 triggerSlash，正在直接发送文本...");
         await window.triggerSlash(text);
         return;
     }
-    
-    // 如果在特殊环境（如iframe）中，尝试父窗口的函数
     if (window.parent && typeof window.parent.triggerSlash === 'function') {
-        console.log("【小剧场库】找到 parent.triggerSlash，正在直接发送文本...");
         await window.parent.triggerSlash(text);
         return;
     }
-
-    // 如果连官方API都找不到，执行最后的备用方案
     console.error("【小剧场库】致命错误：未找到官方发送函数 triggerSlash！将回退到模拟输入。");
     const sendButton = $('#send_but');
     const inputTextArea = $('#send_textarea');
     if (sendButton.length > 0 && inputTextArea.length > 0) {
-        const originalText = inputTextArea.val();
         inputTextArea.val(text);
         inputTextArea[0].dispatchEvent(new Event('input', { bubbles: true }));
-        setTimeout(() => { 
-            sendButton.click();
-        }, 50);
+        setTimeout(() => { sendButton.click(); }, 50);
     }
 }
 // ============================================================================
@@ -145,9 +135,8 @@ function renderStoryList(stories) {
             e.stopPropagation();
             try {
                 const fullStory = await loadStory(storyData.id, true);
-                if (fullStory) {
-                    openEditModal(fullStory);
-                } else { alert("加载剧本内容失败，无法编辑。"); }
+                if (fullStory) openEditModal(fullStory);
+                else alert("加载剧本内容失败，无法编辑。");
             } catch (error) { console.error("编辑前加载失败:", error); alert("加载剧本内容失败，无法编辑。"); }
         });
         deleteBtn.on('click', (e) => { e.stopPropagation(); deleteStory(storyData); });
@@ -202,23 +191,51 @@ async function openLibraryModal() {
     const modalHtml = await $.get(`${extensionFolderPath}/library.html`);
     $("body").append(modalHtml);
     
+    // 【核心修改】重构搜索和过滤函数，使其能同时处理按钮和下拉框
     function handleSearchAndFilter() {
         const searchTerm = $("#story_search_input").val().toLowerCase();
-        const activeTag = $(".library-tag-btn.active").data('tag');
+        
+        let activeTag;
+        const tagSelect = $("#library_tag_select");
+        // 判断当前是移动端（下拉框可见）还是桌面端（按钮可见）
+        if (tagSelect.is(':visible')) {
+            activeTag = tagSelect.val();
+        } else {
+            activeTag = $(".library-tag-btn.active").data('tag');
+        }
+
         let filteredStories = allStories;
-        if (activeTag !== 'all' && activeTag) { filteredStories = filteredStories.filter(s => s.tags.includes(activeTag)); }
-        if (searchTerm) { filteredStories = filteredStories.filter(s => s.title.toLowerCase().includes(searchTerm)); }
+        if (activeTag !== 'all' && activeTag) {
+            filteredStories = filteredStories.filter(s => s.tags.includes(activeTag));
+        }
+        if (searchTerm) {
+            filteredStories = filteredStories.filter(s => s.title.toLowerCase().includes(searchTerm));
+        }
         renderStoryList(filteredStories);
     }
 
+    // 【核心修改】重构标签渲染函数，使其同时填充按钮和下拉框
     function renderTags() {
         const tagContainer = $("#library_tag_container").empty();
+        const tagSelect = $("#library_tag_select").empty();
         const tags = new Set(['all', ...allStories.flatMap(story => story.tags)]);
+
         tags.forEach(tag => {
-            const btn = $('<button class="library-tag-btn"></button').data('tag', tag).text(tag === 'all' ? '全部' : tag);
+            const tagName = (tag === 'all' ? '全部' : tag);
+
+            // 1. 填充桌面端的按钮
+            const btn = $('<button class="library-tag-btn"></button').data('tag', tag).text(tagName);
             if (tag === 'all') btn.addClass('active');
-            btn.on('click', function() { $(".library-tag-btn.active").removeClass('active'); $(this).addClass('active'); handleSearchAndFilter(); });
+            btn.on('click', function() {
+                $(".library-tag-btn.active").removeClass('active');
+                $(this).addClass('active');
+                handleSearchAndFilter();
+            });
             tagContainer.append(btn);
+
+            // 2. 填充移动端的下拉选项
+            const option = $('<option></option>').val(tag).text(tagName);
+            tagSelect.append(option);
         });
     }
 
@@ -233,6 +250,7 @@ async function openLibraryModal() {
         } catch (error) { console.error("小剧场库: 加载 index.json 失败!", error); $("#library_tag_container").html(`<p>加载索引失败。</p>`); }
     }
 
+    // 绑定通用事件
     $("#story_library_close_btn").on("click", closeLibraryModal);
     $("#story_library_modal_overlay").on("click", function(event) { if (event.target === this) closeLibraryModal(); });
     $("#story_search_input").on('input', handleSearchAndFilter);
@@ -243,52 +261,45 @@ async function openLibraryModal() {
             closeLibraryModal();
         } else { alert("请先从左侧列表中选择一个剧本！"); }
     });
+
+    // 【核心修改】为移动端的下拉框绑定 change 事件
+    $("#library_tag_select").on("change", handleSearchAndFilter);
     
     await initStoryLibrary();
 }
 
 jQuery(async () => {
     try {
-        // 加载插件设置到 "Extensions" 面板
         const settingsHtml = await $.get(`${extensionFolderPath}/settings.html`);
         $("#extensions_settings2").append(settingsHtml);
         
-        // 为“启用小剧场库”复选框绑定事件
         $("#enable_story_library").on("input", onEnableChange);
-        
-        // 加载用户设置
         await loadSettings();
         
-        // 【新增功能】将“小剧场库”按钮也添加到左侧的扩展菜单中
-        function addLibraryButtonToExtensionsMenu() {
-            // 只有在插件启用时才添加按钮
+        function updateExtensionsMenuButton() {
+            const buttonId = '#story_library_in_extension_menu_btn';
+            
             if (extension_settings[extensionName]?.enabled) {
                 const extensionsMenu = $('#extensionsMenu');
-                if (extensionsMenu.length > 0) {
-                    // 避免重复添加按钮
-                    if ($('#story_library_in_extension_menu_btn').length === 0) {
-                         const menuButtonHtml = `
-                            <div id="story_library_in_extension_menu_btn" class="list-group-item flex-container flexGap5 interactable">
-                                <div class="fa-solid fa-book-open extensionsMenuExtensionButton"></div>
-                                <span>小剧场库</span>
-                            </div>
-                        `;
-                        extensionsMenu.append(menuButtonHtml);
-                        $('#story_library_in_extension_menu_btn').on('click', openLibraryModal);
-                    }
+                if (extensionsMenu.length > 0 && $(buttonId).length === 0) {
+                     const menuButtonHtml = `
+                        <div id="story_library_in_extension_menu_btn" class="list-group-item flex-container flexGap5 interactable">
+                            <div class="fa-solid fa-book-open extensionsMenuExtensionButton"></div>
+                            <span>小剧场库</span>
+                        </div>
+                    `;
+                    extensionsMenu.append(menuButtonHtml);
+                    $(buttonId).on('click', openLibraryModal);
                 }
             } else {
-                 // 如果插件被禁用，则移除按钮
-                 $('#story_library_in_extension_menu_btn').remove();
+                 $(buttonId).remove();
             }
         }
 
-        // 首次加载时和每次启用/禁用插件时都更新扩展菜单中的按钮
-        addLibraryButtonToExtensionsMenu();
-        $("#enable_story_library").on("input", addLibraryButtonToExtensionsMenu);
+        updateExtensionsMenuButton();
+        $("#enable_story_library").on("input", updateExtensionsMenuButton);
 
     } catch (error) {
         console.error(`加载插件【${extensionName}】时发生严重错误:`, error);
     }
 });
-
