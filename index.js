@@ -4,7 +4,7 @@ import { saveSettingsDebounced } from "../../../../script.js";
 const extensionName = "My-SillyTavern-Stories";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 
-// ---【请在这里配置你的服务器信息】---
+// ---【服务器信息】---
 const SERVER_IP = "1.92.112.106"; 
 const SECRET_KEY = "qweasd123"; 
 // ------------------------------------
@@ -21,7 +21,6 @@ const defaultSettings = {
 let allStories = [];
 let currentStory = null;
 
-// ====================== 【坚守您的、绝对正确的发送逻辑】 ======================
 async function sendTextDirectly(text) {
     if (!text) return;
     if (typeof window.triggerSlash === 'function') {
@@ -190,14 +189,12 @@ async function openLibraryModal() {
     if ($("#story_library_modal_overlay").length > 0) return;
     const modalHtml = await $.get(`${extensionFolderPath}/library.html`);
     $("body").append(modalHtml);
-    
-    // 【核心修改】重构搜索和过滤函数，使其能同时处理按钮和下拉框
+
     function handleSearchAndFilter() {
         const searchTerm = $("#story_search_input").val().toLowerCase();
         
         let activeTag;
         const tagSelect = $("#library_tag_select");
-        // 判断当前是移动端（下拉框可见）还是桌面端（按钮可见）
         if (tagSelect.is(':visible')) {
             activeTag = tagSelect.val();
         } else {
@@ -214,7 +211,6 @@ async function openLibraryModal() {
         renderStoryList(filteredStories);
     }
 
-    // 【核心修改】重构标签渲染函数，使其同时填充按钮和下拉框
     function renderTags() {
         const tagContainer = $("#library_tag_container").empty();
         const tagSelect = $("#library_tag_select").empty();
@@ -223,7 +219,6 @@ async function openLibraryModal() {
         tags.forEach(tag => {
             const tagName = (tag === 'all' ? '全部' : tag);
 
-            // 1. 填充桌面端的按钮
             const btn = $('<button class="library-tag-btn"></button').data('tag', tag).text(tagName);
             if (tag === 'all') btn.addClass('active');
             btn.on('click', function() {
@@ -233,7 +228,6 @@ async function openLibraryModal() {
             });
             tagContainer.append(btn);
 
-            // 2. 填充移动端的下拉选项
             const option = $('<option></option>').val(tag).text(tagName);
             tagSelect.append(option);
         });
@@ -262,7 +256,6 @@ async function openLibraryModal() {
         } else { alert("请先从左侧列表中选择一个剧本！"); }
     });
 
-    // 【核心修改】为移动端的下拉框绑定 change 事件
     $("#library_tag_select").on("change", handleSearchAndFilter);
     
     await initStoryLibrary();
